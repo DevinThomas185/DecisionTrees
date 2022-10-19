@@ -1,18 +1,22 @@
 import numpy as np
 from typing import Callable, Optional
 
-class DecisionTree():
-    
+class Node():
+    pass
+
+class DecisionTreeLeaf(Node):
     __slots__ = [
-        "root",
+        "classification",
     ]
 
-    def __init__(self) -> None:
-        self.root = None
+    def __init__(
+        self,
+        classification: str,
+    ) -> None:
+        self.classification = classification
 
-    
 
-class DecisionTreeNode():
+class DecisionTreeNode(Node):
     __slots__ = [
         "function",
         "node_label",
