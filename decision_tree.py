@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 from typing import Callable, Optional
 
@@ -15,6 +16,8 @@ class DecisionTreeLeaf(Node):
     ) -> None:
         self.classification = classification
 
+    def print_tree(self, indent):
+        print("-"*indent, self.classification)
 
 class DecisionTreeNode(Node):
     __slots__ = [
@@ -51,3 +54,8 @@ class DecisionTreeNode(Node):
         right_node: DecisionTreeNode,
     ) -> None:
         self.right_node = right_node
+
+    def print_tree(self, indent):
+        print("-"*indent, self.node_label)
+        self.left_node.print_tree(indent+1)
+        self.right_node.print_tree(indent+1)
