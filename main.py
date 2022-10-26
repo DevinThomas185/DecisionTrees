@@ -5,6 +5,7 @@ import file_utils
 import math_utils
 
 from decision_tree import Node, DecisionTreeLeaf, DecisionTreeNode
+from plot_tree import plot_tree
 
 TRAINING_FRACTION = 0.8
 
@@ -121,4 +122,5 @@ if __name__ == "__main__":
     print(test_accuracy(test, tree))
     print(test_accuracy(train, tree))
     print(test_accuracy(validation, tree))
+    plot_tree(tree, depth, "tree.png")
 
