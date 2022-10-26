@@ -2,13 +2,18 @@ from __future__ import annotations
 import numpy as np
 from typing import Callable, Optional
 
+
 class Node():
     pass
+
 
 class DecisionTreeLeaf(Node):
     __slots__ = [
         "classification",
     ]
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     def __init__(
         self,
@@ -19,6 +24,7 @@ class DecisionTreeLeaf(Node):
     def print_tree(self, indent):
         print("-"*indent, self.classification)
 
+
 class DecisionTreeNode(Node):
     __slots__ = [
         "function",
@@ -26,6 +32,9 @@ class DecisionTreeNode(Node):
         "left_node",
         "right_node",
     ]
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     def __init__(
         self,
