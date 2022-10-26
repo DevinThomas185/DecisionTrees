@@ -1,11 +1,14 @@
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 
-from decision_tree import DecisionTreeNode
+from decision_tree import DecisionTreeLeaf, DecisionTreeNode
+
+# Adjustment from current x position - Left or Right
+OFFSET = 100
+Y_SPACE = 1
 
 
-def traverse_tree(root, depth=0, x=0, y=50, y_width=5):
+def traverse_tree(root, m_depth, depth=1, x=0, y=50):
 
     # Plots the nodes
     if isinstance(root, DecisionTreeNode):
@@ -19,17 +22,12 @@ def traverse_tree(root, depth=0, x=0, y=50, y_width=5):
                  )
 
         # Sets the correct spacing between nodes
-        ypos_child = y - y_width
-        left_child = x - 2*1/np.power(2, depth)
-        right_child = x + 2*1/np.power(2, depth)
 
-        # Special spacing conditions to prevent clumping of nodes
-        if (depth > 4) and (depth < 6):
-            left_child = x - 2*1/np.power(2, depth-2)
-            right_child = x + 2*1/np.power(2, depth-2)
-        if (depth >= 6):
-            left_child = x - 2*1/np.power(2, depth-4)
-            right_child = x + 2*1/np.power(2, depth-4)
+        height = m_depth - depth - 1
+
+        ypos_child = y - Y_SPACE
+        left_child = x - (np.power(2, height) * OFFSET)
+        right_child = x + (np.power(2, height) * OFFSET)
 
         x_val = [left_child, x, right_child]
         y_val = [ypos_child, y, ypos_child]
@@ -37,6 +35,7 @@ def traverse_tree(root, depth=0, x=0, y=50, y_width=5):
 
     # Plots the leaf
     else:
+        assert (isinstance(root, DecisionTreeLeaf))
         plt.text(x, y, str(getattr(root, 'classification')), size='smaller', rotation=0,
                  ha="center",
                  va="center",
@@ -48,17 +47,17 @@ def traverse_tree(root, depth=0, x=0, y=50, y_width=5):
 
     # If on a node, recursively call function and increase depth by 1
     if isinstance(root, DecisionTreeNode):
-        traverse_tree(getattr(root, 'left_node'), depth +
-                      1, left_child, ypos_child, y_width)
-        traverse_tree(getattr(root, 'right_node'), depth +
-                      1, right_child, ypos_child, y_width)
+        traverse_tree(root.left_node, m_depth, depth +
+                      1, left_child, ypos_child)
+        traverse_tree(root.right_node, m_depth, depth +
+                      1, right_child, ypos_child)
         return
 
 
 def plot_tree(root, max_depth, file):
-    plt.figure(figsize=(2**5, max_depth), dpi=160)
+    plt.figure(figsize=(min(2**5, 2**max_depth), max_depth), dpi=80)
     plt.axis('off')
-    traverse_tree(root)
+    traverse_tree(root, max_depth)
     plt.savefig(file)
     plt.close()
     return
