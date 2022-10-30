@@ -4,7 +4,9 @@ from typing import Callable, Optional
 
 
 class Node():
-    pass
+    def print_tree(self, ident):
+        # Should be overridden
+        pass
 
 
 class DecisionTreeLeaf(Node):
@@ -18,11 +20,13 @@ class DecisionTreeLeaf(Node):
     def __init__(
         self,
         classification: str,
-    ) -> None:
+    ):
         self.classification = classification
 
     def print_tree(self, indent):
         print("-"*indent, self.classification)
+    def get_classification(self) -> str:
+        return self.classification
 
 
 class DecisionTreeNode(Node):
@@ -49,18 +53,18 @@ class DecisionTreeNode(Node):
         """
         self.function = function
         self.node_label = node_label
-        self.left_node: Optional[DecisionTreeNode] = None
-        self.right_node: Optional[DecisionTreeNode] = None
+        self.left_node: Optional[Node] = None
+        self.right_node: Optional[Node] = None
 
     def set_left_node(
         self,
-        left_node: DecisionTreeNode,
+        left_node: Node,
     ) -> None:
         self.left_node = left_node
 
     def set_right_node(
         self,
-        right_node: DecisionTreeNode,
+        right_node: Node,
     ) -> None:
         self.right_node = right_node
 
