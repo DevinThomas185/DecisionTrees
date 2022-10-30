@@ -144,7 +144,6 @@ def prune_tree(
             validation, root, unique_classes
         )
 
-        candidate_node = current_node
         is_left = current_node.parent.left_node == current_node
 
         new_leaf_class = (
@@ -169,9 +168,9 @@ def prune_tree(
         # Undo since tree is now worse
         if new_classification_error > old_classification_error:
             if is_left:
-                candidate_node.parent.set_left_node(candidate_node)
+                current_node.parent.set_left_node(current_node)
             else:
-                candidate_node.parent.set_right_node(candidate_node)
+                current_node.parent.set_right_node(current_node)
 
 
 def step_3():
