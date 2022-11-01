@@ -49,11 +49,7 @@ def get_confusion_matrix(
 def get_overall_accuracy(
     confusion_matrix: np.ndarray,
 ) -> float:
-    total_tp = 0
-    for i in range(len(confusion_matrix)):
-        tp, _, _, _ = get_tp_tn_fp_fn(confusion_matrix, i)
-        total_tp += tp
-    return total_tp / np.sum(confusion_matrix)
+    return np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
 
 
 def get_tp_tn_fp_fn(
