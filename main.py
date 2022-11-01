@@ -19,8 +19,8 @@ def get_features_and_labels(
 
 
 def find_split(
-    training_dataset: np.ndarray, used_splits: List[Tuple[int, float]]
-) -> Tuple[DecisionTreeNode, np.ndarray, np.ndarray, List[Tuple[int, float]]]:
+    training_dataset: np.ndarray, used_splits: Set[Tuple[int, float]]
+) -> Tuple[DecisionTreeNode, np.ndarray, np.ndarray, Set[Tuple[int, float]]]:
     num_features = np.shape(training_dataset)[1] - 1
 
     best_entropy_gain = 0
@@ -79,7 +79,7 @@ def find_split(
                 best_split_value = split_value
 
     # Record the best split so that we don't use it twice.
-    used_splits.append((best_split_feature, best_split_value))
+    used_splits.add((best_split_feature, best_split_value))
     return (
         DecisionTreeNode(
             function=lambda x: x[best_split_feature] < best_split_value,
@@ -103,7 +103,7 @@ def decision_tree_learning(
     training_dataset: np.ndarray,
     unique_classes: List[str],
     depth: int = 0,
-    split_features: List[Tuple[int, float]] = [],
+    split_features: Set[Tuple[int, float]] = set(),
 ) -> Tuple[Node, int]:
     _, y_train = get_features_and_labels(training_dataset)
 
