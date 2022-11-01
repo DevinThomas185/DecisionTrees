@@ -181,7 +181,7 @@ def prune_tree(
 
 def no_pruning(
     unique_classes: List[str],
-    train_test_split: Generator[Tuple[np.ndarray, np.ndarray], None, None],
+    shuffled_dataset: np.ndarray,
     plot_trees: bool,
     k_folds: int,
     debug: bool,
@@ -189,11 +189,12 @@ def no_pruning(
 
     num_classes = len(unique_classes)
     overall_confusion_matrix = np.zeros((num_classes, num_classes))
+    train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
 
     for i in range(k_folds):
         start = time.time()
         if debug:
-            print("\nIteration", i)
+            print("\nTest Fold:", i)
 
         train, test = next(train_test_split)
         tree, depth = decision_tree_learning(train, unique_classes)
@@ -208,7 +209,7 @@ def no_pruning(
             print("Accuracy: {:.3f} \tTime: {:.3f}".format(acc, end - start))
 
         confusion_matrix = evaluation_utils.get_confusion_matrix(
-            test, tree, 4, unique_classes
+            test, tree, num_classes, unique_classes
         )
 
         overall_confusion_matrix += confusion_matrix
@@ -218,7 +219,7 @@ def no_pruning(
 
 def pruning(
     unique_classes: List[str],
-    train_test_split: Generator[Tuple[np.ndarray, np.ndarray], None, None],
+    shuffled_dataset: np.ndarray,
     plot_trees: bool,
     k_folds: int,
     debug: bool,
@@ -226,18 +227,18 @@ def pruning(
 
     num_classes = len(unique_classes)
     overall_confusion_matrix = np.zeros((num_classes, num_classes))
+    train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
 
     for i in range(k_folds):
         old_train, test = next(train_test_split)
+        validation_train_split = file_utils.get_kminus1_and_1_split(
+            old_train, k_folds - 1
+        )
         for j in range(k_folds - 1):
             start = time.time()
-            validation_train_split = file_utils.get_kminus1_and_1_split(
-                old_train, k_folds - 1
-            )
             train, validation = next(validation_train_split)
-
             if debug:
-                print("\nIteration", i, j)
+                print("\nTest Fold: {} \tValidation Fold: {}".format(i, j))
 
             tree, depth = decision_tree_learning(train, unique_classes)
 
@@ -254,15 +255,15 @@ def pruning(
 
             if debug:
                 new_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+                end = time.time()
                 print(
                     "Accuracy: {:.3f} -> {:.3f} \tTime: {:.3f}".format(
                         prev_acc, new_acc, end - start
                     )
                 )
 
-            end = time.time()
             confusion_matrix = evaluation_utils.get_confusion_matrix(
-                test, tree, num_classes
+                test, tree, num_classes, unique_classes
             )
 
             overall_confusion_matrix += confusion_matrix
@@ -284,12 +285,10 @@ def run_decision_tree(
     shuffled_dataset = file_utils.shuffle_dataset(dataset, seed=seed)
     num_classes = len(unique_classes)
 
-    train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
-
     if with_pruning:
         overall_confusion_matrix = pruning(
             unique_classes=unique_classes,
-            train_test_split=train_test_split,
+            shuffled_dataset=shuffled_dataset,
             plot_trees=plot_trees,
             k_folds=k_folds,
             debug=debug,
@@ -297,7 +296,7 @@ def run_decision_tree(
     else:
         overall_confusion_matrix = no_pruning(
             unique_classes=unique_classes,
-            train_test_split=train_test_split,
+            shuffled_dataset=shuffled_dataset,
             plot_trees=plot_trees,
             k_folds=k_folds,
             debug=debug,
