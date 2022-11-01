@@ -1,8 +1,5 @@
-from enum import unique
-import os
-from random import seed
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import List, Optional, Tuple
 
 
 def read_dataset(
@@ -24,7 +21,7 @@ def read_dataset(
 
 def shuffle_dataset(
     dataset: np.ndarray,
-    seed: int = None,
+    seed: Optional[int],
 ) -> np.ndarray:
     np.random.seed(seed)
     np.random.shuffle(dataset)

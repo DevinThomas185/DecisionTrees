@@ -1,4 +1,6 @@
-from typing import Dict, List, Tuple, Set
+from argparse import ArgumentParser
+import sys
+from typing import Dict, Generator, List, Optional, Tuple, Set
 import numpy as np
 import file_utils
 import math_utils
@@ -129,7 +131,10 @@ def decision_tree_learning(
 
 
 def prune_tree(
-    root: Node, current_node: Node, validation: np.ndarray, unique_classes: List[str]
+    root: Node,
+    current_node: Node,
+    validation: np.ndarray,
+    unique_classes: List[str],
 ) -> Node:
     if isinstance(current_node, DecisionTreeLeaf):
         return
@@ -174,66 +179,53 @@ def prune_tree(
                 current_node.parent.set_right_node(current_node)
 
 
-def step_3():
-    dataset, unique_classes = file_utils.read_dataset(
-        # "./intro2ML-coursework1/wifi_db/clean_dataset.txt"
-        "./intro2ML-coursework1/wifi_db/noisy_dataset.txt"
-    )
-    shuffled_dataset = file_utils.shuffle_dataset(dataset, seed=0)
-    k_folds = 10
+def no_pruning(
+    unique_classes: List[str],
+    train_test_split: Generator[Tuple[np.ndarray, np.ndarray], None, None],
+    plot_trees: bool,
+    k_folds: int,
+    debug: bool,
+) -> np.ndarray:
+
     num_classes = len(unique_classes)
-
-    get_splits = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
-
     overall_confusion_matrix = np.zeros((num_classes, num_classes))
 
     for i in range(k_folds):
-        print("Iteration", i)
-        train, test = next(get_splits)
-        tree, depth = decision_tree_learning(train, unique_classes)
-        # print("-Test Accuracy", evaluation_utils.evaluate(test, tree, unique_classes))
-        # print("-Train Accuracy", evaluation_utils.evaluate(train, tree, unique_classes))
+        start = time.time()
+        if debug:
+            print("\nIteration", i)
 
-        plot_tree(tree, depth, "tree{}.svg".format(i))
+        train, test = next(train_test_split)
+        tree, depth = decision_tree_learning(train, unique_classes)
+
+        end = time.time()
+
+        if plot_trees:
+            plot_tree(tree, depth, "tree{}.svg".format(i))
+
+        if debug:
+            acc = evaluation_utils.evaluate(test, tree, unique_classes)
+            print("Accuracy: {:.3f} \tTime: {:.3f}".format(acc, end - start))
+
         confusion_matrix = evaluation_utils.get_confusion_matrix(
             test, tree, 4, unique_classes
         )
 
         overall_confusion_matrix += confusion_matrix
 
-    print(overall_confusion_matrix)
-    print(evaluation_utils.get_overall_accuracy(confusion_matrix))
-
-    for i in range(num_classes):
-        print()
-        print(
-            "Class {} Accuracy: {}".format(
-                i, evaluation_utils.get_accuracy(confusion_matrix, i)
-            )
-        )
-        print(
-            "Class {} Precision: {}".format(
-                i, evaluation_utils.get_precision(confusion_matrix, i)
-            )
-        )
-        print(
-            "Class {} Recall: {}".format(
-                i, evaluation_utils.get_recall(confusion_matrix, i)
-            )
-        )
-        print("Class {} F1: {}".format(i, evaluation_utils.get_f1(confusion_matrix, i)))
+    return overall_confusion_matrix
 
 
-def step_4():
-    dataset, unique_classes = file_utils.read_dataset(
-        # "./intro2ML-coursework1/wifi_db/clean_dataset.txt"
-        "./intro2ML-coursework1/wifi_db/noisy_dataset.txt"
-    )
-    shuffled_dataset = file_utils.shuffle_dataset(dataset, seed=0)
-    k_folds = 10
+def pruning(
+    unique_classes: List[str],
+    train_test_split: Generator[Tuple[np.ndarray, np.ndarray], None, None],
+    plot_trees: bool,
+    k_folds: int,
+    debug: bool,
+) -> np.ndarray:
+
     num_classes = len(unique_classes)
-
-    train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
+    overall_confusion_matrix = np.zeros((num_classes, num_classes))
 
     for i in range(k_folds):
         old_train, test = next(train_test_split)
@@ -243,23 +235,168 @@ def step_4():
                 old_train, k_folds - 1
             )
             train, validation = next(validation_train_split)
-            print("Iteration", i, j)
+
+            if debug:
+                print("\nIteration", i, j)
+
             tree, depth = decision_tree_learning(train, unique_classes)
 
             # Prune tree
-            plot_tree(tree, depth, "images/unpruned/{}_{}.svg".format(i, j))
-            prev_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+            if debug:
+                prev_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+            if plot_trees:
+                plot_tree(tree, depth, "before_{}_{}.svg".format(i, j))
 
             prune_tree(tree, tree, validation, unique_classes)
 
-            plot_tree(tree, depth, "images/pruned/{}_{}.svg".format(i, j))
-            new_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
-            end = time.time()
-            print(prev_acc, " -> ", new_acc, "\tTime:", end - start)
+            if plot_trees:
+                plot_tree(tree, depth, "after_{}_{}.svg".format(i, j))
 
-        # confusion_matrix = evaluation_utils.get_confusion_matrix(test, tree, num_classes)
+            if debug:
+                new_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+                print(
+                    "Accuracy: {:.3f} -> {:.3f} \tTime: {:.3f}".format(
+                        prev_acc, new_acc, end - start
+                    )
+                )
+
+            end = time.time()
+            confusion_matrix = evaluation_utils.get_confusion_matrix(
+                test, tree, num_classes
+            )
+
+            overall_confusion_matrix += confusion_matrix
+
+    return overall_confusion_matrix
+
+
+def run_decision_tree(
+    k_folds: int,
+    path_to_dataset: str,
+    with_pruning: bool,
+    plot_trees: bool,
+    debug: bool,
+    seed: Optional[int],
+) -> None:
+    start = time.time()
+
+    dataset, unique_classes = file_utils.read_dataset(path_to_dataset)
+    shuffled_dataset = file_utils.shuffle_dataset(dataset, seed=seed)
+    num_classes = len(unique_classes)
+
+    train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
+
+    if with_pruning:
+        overall_confusion_matrix = pruning(
+            unique_classes=unique_classes,
+            train_test_split=train_test_split,
+            plot_trees=plot_trees,
+            k_folds=k_folds,
+            debug=debug,
+        )
+    else:
+        overall_confusion_matrix = no_pruning(
+            unique_classes=unique_classes,
+            train_test_split=train_test_split,
+            plot_trees=plot_trees,
+            k_folds=k_folds,
+            debug=debug,
+        )
+
+    for i in range(num_classes):
+        print()
+        print(
+            "Class {} Accuracy: {}".format(
+                i, evaluation_utils.get_accuracy(overall_confusion_matrix, i)
+            )
+        )
+        print(
+            "Class {} Precision: {}".format(
+                i, evaluation_utils.get_precision(overall_confusion_matrix, i)
+            )
+        )
+        print(
+            "Class {} Recall: {}".format(
+                i, evaluation_utils.get_recall(overall_confusion_matrix, i)
+            )
+        )
+        print(
+            "Class {} F1: {}".format(
+                i, evaluation_utils.get_f1(overall_confusion_matrix, i)
+            )
+        )
+
+    print(
+        "\nOverall Accuracy: {}".format(
+            evaluation_utils.get_overall_accuracy(overall_confusion_matrix)
+        )
+    )
+
+    end = time.time()
+
+    if debug:
+        print("\nResulting Overall Confusion Matrix:")
+        print(overall_confusion_matrix)
+        print("\nTotal Time Taken: {:.3f}".format(end - start))
 
 
 if __name__ == "__main__":
-    # step_3()
-    step_4()
+    parser = ArgumentParser(
+        prog="Decision Tree", description="Decision Tree and Evaluation Metrics"
+    )
+
+    parser.add_argument(
+        "PATH_TO_DATASET",
+        help="The relative path to the dataset",
+    )
+
+    parser.add_argument(
+        "--visualise",
+        "-v",
+        action="store_true",
+        help="Use this flag to produce images visualising the decision trees",
+    )
+
+    parser.add_argument(
+        "--k_folds",
+        "-k",
+        help="The number of folds to use to split the dataset up into",
+        default=10,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--pruning",
+        "-p",
+        action="store_true",
+        help="Use this flag to turn on tree pruning utilising a validation dataset fold",
+    )
+
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Use this flag to turn on debugging prints",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--seed",
+        help="Provide a seed for shuffling the dataset, leave empty for random seed",
+        default=None,
+        type=int,
+    )
+
+    args = parser.parse_args(sys.argv[1:])
+
+    run_decision_tree(
+        k_folds=args.k_folds,
+        path_to_dataset=args.PATH_TO_DATASET,
+        with_pruning=args.pruning,
+        plot_trees=args.visualise,
+        debug=args.debug,
+        seed=args.seed,
+    )
+
+    # "./intro2ML-coursework1/wifi_db/clean_dataset.txt"
+    # "./intro2ML-coursework1/wifi_db/noisy_dataset.txt"
