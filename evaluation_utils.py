@@ -41,7 +41,7 @@ def get_confusion_matrix(
         real_label, tree_label = evaluate_sample(entry, tree, unique_classes)
         r = unique_classes.index(real_label)
         t = unique_classes.index(tree_label)
-        confusion_matrix[t, r] = confusion_matrix[t, r] + 1
+        confusion_matrix[r, t] = confusion_matrix[r, t] + 1
 
     return confusion_matrix
 
