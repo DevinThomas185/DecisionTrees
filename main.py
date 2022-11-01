@@ -229,6 +229,9 @@ def pruning(
     overall_confusion_matrix = np.zeros((num_classes, num_classes))
     train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
 
+    total_depth_before = 0
+    total_depth_after = 0
+
     for i in range(k_folds):
         old_train, test = next(train_test_split)
         validation_train_split = file_utils.get_kminus1_and_1_split(
@@ -241,6 +244,7 @@ def pruning(
                 print("\nTest Fold: {} \tValidation Fold: {}".format(i, j))
 
             tree, depth = decision_tree_learning(train, unique_classes)
+            total_depth_before += depth
 
             # Prune tree
             if debug:
@@ -255,6 +259,7 @@ def pruning(
 
             if debug:
                 new_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+                total_depth_after += evaluation_utils.get_depth(tree)
                 end = time.time()
                 print(
                     "Accuracy: {:.3f} -> {:.3f} \tTime: {:.3f}".format(
@@ -268,6 +273,17 @@ def pruning(
 
             overall_confusion_matrix += confusion_matrix
 
+    if debug:
+        print(
+            "\nAverage Depth Before: {}".format(
+                total_depth_before / (k_folds * (k_folds - 1))
+            )
+        )
+        print(
+            "Average Depth After: {}".format(
+                total_depth_after / (k_folds * (k_folds - 1))
+            )
+        )
     return overall_confusion_matrix
 
 

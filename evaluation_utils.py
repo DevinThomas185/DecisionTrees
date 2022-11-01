@@ -3,6 +3,14 @@ from decision_tree import Node, DecisionTreeNode, DecisionTreeLeaf
 import numpy as np
 
 
+def get_depth(tree: Node) -> int:
+    if isinstance(tree, DecisionTreeNode):
+        return 1 + max(get_depth(tree.left_node), get_depth(tree.right_node))
+    else:
+        assert isinstance(tree, DecisionTreeLeaf)
+        return 1
+
+
 def evaluate_sample(
     sample: np.ndarray, tree: Node, unique_classes: List[str]
 ) -> Tuple[str, str]:
