@@ -3,6 +3,7 @@ import numpy as np
 import file_utils
 import math_utils
 import evaluation_utils
+import time
 
 from decision_tree import Node, DecisionTreeLeaf, DecisionTreeNode
 from plot_tree import plot_tree
@@ -237,6 +238,7 @@ def step_4():
     for i in range(k_folds):
         old_train, test = next(train_test_split)
         for j in range(k_folds - 1):
+            start = time.time()
             validation_train_split = file_utils.get_kminus1_and_1_split(
                 old_train, k_folds - 1
             )
@@ -245,13 +247,15 @@ def step_4():
             tree, depth = decision_tree_learning(train, unique_classes)
 
             # Prune tree
-            plot_tree(tree, depth, "before_{}_{}.svg".format(i, j))
-            print(evaluation_utils.evaluate(validation, tree, unique_classes))
+            plot_tree(tree, depth, "images/unpruned/{}_{}.svg".format(i, j))
+            prev_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
 
             prune_tree(tree, tree, validation, unique_classes)
 
-            plot_tree(tree, depth, "after_{}_{}.svg".format(i, j))
-            print(evaluation_utils.evaluate(validation, tree, unique_classes))
+            plot_tree(tree, depth, "images/pruned/{}_{}.svg".format(i, j))
+            new_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+            end = time.time()
+            print(prev_acc, " -> ", new_acc, "\tTime:", end - start)
 
         # confusion_matrix = evaluation_utils.get_confusion_matrix(test, tree, num_classes)
 
