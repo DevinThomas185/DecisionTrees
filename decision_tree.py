@@ -3,42 +3,33 @@ import numpy as np
 from typing import Callable, Optional
 
 
-class Node():
-    def print_tree(self, ident):
-        # Should be overridden
-        pass
+class Node:
+    __slots__ = ["parent", "node_label"]
+
+    def __init__(self, node_label: str) -> None:
+        self.node_label = node_label
 
 
 class DecisionTreeLeaf(Node):
-    __slots__ = [
-        "classification",
-    ]
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
+    __slots__ = ["frequency"]
 
     def __init__(
         self,
         classification: str,
     ):
-        self.classification = classification
+        super().__init__(classification)
+        self.frequency = 0
 
-    def print_tree(self, indent):
-        print("-"*indent, self.classification)
     def get_classification(self) -> str:
-        return self.classification
+        return self.node_label
 
 
 class DecisionTreeNode(Node):
     __slots__ = [
         "function",
-        "node_label",
         "left_node",
         "right_node",
     ]
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
 
     def __init__(
         self,
@@ -61,14 +52,11 @@ class DecisionTreeNode(Node):
         left_node: Node,
     ) -> None:
         self.left_node = left_node
+        left_node.parent = self
 
     def set_right_node(
         self,
         right_node: Node,
     ) -> None:
         self.right_node = right_node
-
-    def print_tree(self, indent):
-        print("-"*indent, self.node_label)
-        self.left_node.print_tree(indent+1)
-        self.right_node.print_tree(indent+1)
+        right_node.parent = self
