@@ -87,7 +87,7 @@ def get_f_beta(
     confusion_matrix: np.ndarray, class_index: int, beta: float = 1.0
 ) -> float:
     precision = get_precision(confusion_matrix, class_index)
-    recall = get_precision(confusion_matrix, class_index)
+    recall = get_recall(confusion_matrix, class_index)
     beta_sq = np.power(beta, 2)
     return (1 + beta_sq) * (precision * recall) / ((beta_sq * precision) + recall)
 
