@@ -308,7 +308,7 @@ def run_decision_tree(
     num_classes = len(unique_classes)
 
     if with_pruning:
-        overall_confusion_matrix, before_cm = pruning(
+        overall_confusion_matrix_after, overall_confusion_matrix_before = pruning(
             unique_classes=unique_classes,
             shuffled_dataset=shuffled_dataset,
             plot_trees=plot_trees,
@@ -350,12 +350,12 @@ def run_decision_tree(
     if with_pruning:
         print(
             "\nOverall Accuracy Before Pruning: {}".format(
-                evaluation_utils.get_overall_accuracy(before_cm)
+                evaluation_utils.get_overall_accuracy(overall_confusion_matrix_before)
             )
         )
         print(
             "\nOverall Accuracy After Pruning: {}".format(
-                evaluation_utils.get_overall_accuracy(overall_confusion_matrix)
+                evaluation_utils.get_overall_accuracy(overall_confusion_matrix_after)
             )
         )
     else:
