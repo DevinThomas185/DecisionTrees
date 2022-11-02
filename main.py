@@ -227,6 +227,7 @@ def pruning(
 
     num_classes = len(unique_classes)
     overall_confusion_matrix = np.zeros((num_classes, num_classes))
+    before_confusion_matrix = np.zeros((num_classes, num_classes))
     train_test_split = file_utils.get_kminus1_and_1_split(shuffled_dataset, k_folds)
 
     total_depth_before = 0
@@ -249,6 +250,11 @@ def pruning(
             # Prune tree
             if debug:
                 prev_acc = evaluation_utils.evaluate(validation, tree, unique_classes)
+                before_cm = evaluation_utils.get_confusion_matrix(
+                    test, tree, num_classes, unique_classes
+                )
+                before_confusion_matrix += before_cm
+
             if plot_trees:
                 plot_tree(tree, depth, "before_{}_{}.svg".format(i, j))
 
@@ -284,7 +290,7 @@ def pruning(
                 total_depth_after / (k_folds * (k_folds - 1))
             )
         )
-    return overall_confusion_matrix
+    return overall_confusion_matrix, before_confusion_matrix
 
 
 def run_decision_tree(
@@ -302,7 +308,7 @@ def run_decision_tree(
     num_classes = len(unique_classes)
 
     if with_pruning:
-        overall_confusion_matrix = pruning(
+        overall_confusion_matrix, before_cm = pruning(
             unique_classes=unique_classes,
             shuffled_dataset=shuffled_dataset,
             plot_trees=plot_trees,
@@ -341,11 +347,23 @@ def run_decision_tree(
             )
         )
 
-    print(
-        "\nOverall Accuracy: {}".format(
-            evaluation_utils.get_overall_accuracy(overall_confusion_matrix)
+    if with_pruning:
+        print(
+            "\nOverall Accuracy Before Pruning: {}".format(
+                evaluation_utils.get_overall_accuracy(before_cm)
+            )
         )
-    )
+        print(
+            "\nOverall Accuracy After Pruning: {}".format(
+                evaluation_utils.get_overall_accuracy(overall_confusion_matrix)
+            )
+        )
+    else:
+        print(
+            "\nOverall Accuracy: {}".format(
+                evaluation_utils.get_overall_accuracy(overall_confusion_matrix)
+            )
+        )
 
     end = time.time()
 
