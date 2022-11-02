@@ -29,12 +29,16 @@ def find_split(
     best_entropy_gain = 0
     best_split_value = 0
     best_split_feature = 0
-    best_above_split = np.array([])
-    best_below_split = np.array([])
 
+    # Retain a split index so that we do not have to copy the dataset each time
+    # to set the best above and best below splits
+    best_split_index = 0
+
+    sorteds = []
     for i in range(num_features):
         # We sort the dataset according to the i-th feature.
         sorted = training_dataset[training_dataset[:, i].argsort()]
+        sorteds.append(sorted)
         # We iterate over the sorted array and compute the entropy gain
         # of a possible split if the classified label differs between two
         # adjacent entries.
@@ -76,8 +80,7 @@ def find_split(
 
             if entropy_gain > best_entropy_gain:
                 best_entropy_gain = entropy_gain
-                best_above_split = np.copy(above_split)
-                best_below_split = np.copy(below_split)
+                best_split_index = j + 1
                 best_split_feature = i
                 best_split_value = split_value
 
@@ -88,8 +91,8 @@ def find_split(
             function=lambda x: x[best_split_feature] < best_split_value,
             node_label="x[{}] < {}".format(best_split_feature, best_split_value),
         ),
-        best_above_split,
-        best_below_split,
+        sorteds[best_split_feature][:best_split_index],
+        sorteds[best_split_feature][best_split_index:],
         used_splits,
     )
 
