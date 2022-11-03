@@ -2,7 +2,7 @@ from typing import List, Tuple
 from decision_tree import Node, DecisionTreeNode, DecisionTreeLeaf
 import numpy as np
 
-
+# Used for post-pruning depth analysis
 def get_depth(tree: Node) -> int:
     if isinstance(tree, DecisionTreeNode):
         return 1 + max(get_depth(tree.left_node), get_depth(tree.right_node))
@@ -11,6 +11,7 @@ def get_depth(tree: Node) -> int:
         return 1
 
 
+# Return the actual label and predicted label for a given sample
 def evaluate_sample(
     sample: np.ndarray, tree: Node, unique_classes: List[str]
 ) -> Tuple[str, str]:
@@ -28,6 +29,7 @@ def evaluate_sample(
     return (real_label, tree_label)
 
 
+# Evaluate the accuracy of the tree on a whole test set
 def evaluate(test_dataset: np.ndarray, tree: Node, unique_classes: List[str]) -> float:
     success = 0
     total = 0
