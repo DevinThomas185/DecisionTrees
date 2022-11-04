@@ -4,24 +4,45 @@ from typing import Callable, Optional
 
 
 class Node:
-    __slots__ = ["parent", "node_label"]
+    __slots__ = [
+        "node_label",
+        "parent",
+    ]
 
-    def __init__(self, node_label: str) -> None:
+    def __init__(
+        self,
+        node_label: str,
+    ) -> None:
+        """
+        Basic node class, retaining the node label and parent for this node
+
+        :param node_label: The label for this node, either a class or function
+        """
         self.node_label = node_label
 
 
 class DecisionTreeLeaf(Node):
-    __slots__ = ["frequency"]
+    __slots__ = [
+        "frequency",
+        "class_index",
+    ]
 
     def __init__(
         self,
-        classification: str,
-    ):
-        super().__init__(classification)
-        self.frequency = 0
+        node_label: str,
+        class_index: int,
+    ) -> None:
+        """
+        The class for a leaf node
 
-    def get_classification(self) -> str:
-        return self.node_label
+        :param node_label: The label for this node, a class
+        :param class_index: Index in unique_classes that this label is at,
+                            needed for evaluation without translating to the
+                            class string to see if a prediction is correct
+        """
+        super().__init__(node_label)
+        self.class_index = class_index
+        self.frequency = 0
 
 
 class DecisionTreeNode(Node):
@@ -37,13 +58,14 @@ class DecisionTreeNode(Node):
         node_label: str,
     ) -> None:
         """
-        Class representing a node of a decision tree
+        A regular node with two subtree children
 
-        :param function: Function to evaluate the result of the node
-        :node_label: The representation of the decision this node makes
+        :param function: The function to evaluate which way to go when this
+                         node is reached
+        :param node_label: The label for this node, a function string
         """
+        super().__init__(node_label)
         self.function = function
-        self.node_label = node_label
         self.left_node: Optional[Node] = None
         self.right_node: Optional[Node] = None
 
